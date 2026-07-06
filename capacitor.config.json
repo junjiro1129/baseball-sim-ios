@@ -1,0 +1,10 @@
+{
+  "appId": "com.nakahomes.baseballsim",
+  "appName": "BASEBALL SIM",
+  "webDir": "www",
+  "backgroundColor": "#0f0f0f",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0f0f0f"
+  }
+}

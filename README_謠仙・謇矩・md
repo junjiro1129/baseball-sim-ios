@@ -1,0 +1,47 @@
+# BASEBALL SIM — App Store 提出手順（有料版）
+
+Capacitor 8 でラップ済みのiOSプロジェクトです。**有料アプリ（買い切り）仕様**で、全機能（チーム編集・データ保存読込・リーグ戦フル機能）が最初から解放されています。ライセンスキー関連のUI・コードは完全に除去済みです（規約3.1.1対策）。
+
+ゲーム本体（www/index.html）は完全オフラインで動作し、通信は一切行いません。
+
+## 必要なもの
+- Mac（Xcode 15以上）
+- Apple Developer Program 登録（年間 ¥15,800 前後）
+- CocoaPods は**不要**（Swift Package Manager 構成）
+
+## ビルド手順（Mac上）
+```bash
+npm install
+npx cap sync ios
+npx cap open ios     # Xcodeが開く
+```
+Xcode側:
+1. App ターゲット → Signing & Capabilities → Team に自分のアカウントを設定
+2. Bundle Identifier は `com.nakahomes.baseballsim`（App Store Connect側の App ID と一致させる。変更する場合は capacitor.config.json も揃えて `npx cap sync ios` を再実行）
+3. 実機 or シミュレータで動作確認
+4. Product → Archive → Distribute App → App Store Connect にアップロード
+
+## App Store Connect 側の設定
+- **価格**: 有料（Tier自由。例: ¥500 / ¥800 / ¥1,000）。「価格および配信状況」で設定
+- **プライバシー**: 「データを収集しない」でOK（通信ゼロ・解析なし・広告なし）
+- **輸出コンプライアンス**: Info.plist に ITSAppUsesNonExemptEncryption=false 設定済み → 質問はスキップされます
+- **年齢区分**: 4+
+- **スクリーンショット**: 6.7型（iPhone 15 Pro Max等）と 6.1型ぶんが必要。シミュレータで撮影可
+- **カテゴリ**: ゲーム > スポーツ
+- **審査メモ（推奨）**: 「完全オフラインの野球観戦シミュレーションゲームです。課金・広告・外部リンク・アカウント登録は一切ありません」と書いておくと審査がスムーズです
+
+## 有料版として加えた変更（www/index.html）
+- `isPro=true` に固定（全機能解放）
+- メニューの「ライセンス認証」ボタン、「以下 PRO版のみ」境界、PROアピールカード、ライセンス認証画面を削除
+- ライセンス関連の関数・キー検証ロジックを完全除去
+- チーム編集のPROゲート（アラート）を除去
+- 既存のセーブデータ読込（isProフラグ付きJSON）とも互換
+
+## iOS向け表示調整
+- viewport-fit=cover + セーフエリア対応（ノッチ/ホームバーにUIが隠れない）
+- ピンチ/ダブルタップズーム無効（連打操作向け）
+- ダークモード固定（ステータスバーが白文字）
+ゲームロジックは無改変。localStorage（セーブデータ）はアプリ内に永続保存されます。
+
+## 補足: Web無料版との住み分け
+GitHub Pages の無料版（ライセンス解放式）はそのまま併売できます。App Store 版は「買い切りで全部入り」、Web版は「無料＋キーでPRO」という整理です。アプリ内からWeb版へ誘導するリンクを**入れない**限り、審査上の問題はありません。

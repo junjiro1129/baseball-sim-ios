@@ -1,0 +1,15 @@
+{
+  "name": "baseball-sim",
+  "version": "1.0.0",
+  "description": "BASEBALL SIM - Spectator baseball simulator",
+  "private": true,
+  "scripts": {
+    "sync": "cap sync ios",
+    "open": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/ios": "^8.4.1"
+  }
+}
