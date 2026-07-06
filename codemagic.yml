@@ -1,0 +1,74 @@
+# ===== BASEBALL SIM — Codemagic iOS ビルド設定 =====
+# 置き場所: リポジトリのルート（package.json / capacitor.config.json / ios/ / www/ と同じ階層）
+# 前提: リポジトリのルートに Capacitor プロジェクト一式がある構成
+#       （ルートに package.json, capacitor.config.json, www/, ios/ が並んでいること）
+
+workflows:
+  # --------------------------------------------------------------
+  # A) 署名なしの動作確認ビルド（Apple Developer 登録なしでOK）
+  #    まずこれで「CIでちゃんとビルドが通るか」を無料で確認する
+  # --------------------------------------------------------------
+  ios-check:
+    name: BASEBALL SIM - Build Check (unsigned)
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    environment:
+      node: 20.14.0
+      xcode: latest
+    scripts:
+      - name: npm install
+        script: npm install
+      - name: Capacitor sync (copy web assets to iOS)
+        script: npx cap sync ios
+      - name: Build (no code signing)
+        script: |
+          xcodebuild \
+            -project "ios/App/App.xcodeproj" \
+            -scheme "App" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+
+  # --------------------------------------------------------------
+  # B) TestFlight 配信ビルド（実機テスト用・要 Apple Developer 設定）
+  #    A が通ったら、下の前提を満たした上でこちらを使う
+  # --------------------------------------------------------------
+  ios-testflight:
+    name: BASEBALL SIM - iOS TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      # ↓ Codemagic の「Teams → Integrations → App Store Connect」で作った
+      #    連携の"名前"をここに完全一致で書く（下の説明参照）
+      app_store_connect: AppStoreConnect
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.nakahomes.baseballsim
+      node: 20.14.0
+      xcode: latest
+    scripts:
+      - name: npm install
+        script: npm install
+      - name: Capacitor sync (copy web assets to iOS)
+        script: npx cap sync ios
+      - name: Set build number (Codemagicのビルド番号を使用)
+        script: |
+          cd "$CM_BUILD_DIR/ios/App"
+          agvtool new-version -all "$BUILD_NUMBER" || true
+      - name: Set up code signing
+        script: xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --project "ios/App/App.xcodeproj" \
+            --scheme "App"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
