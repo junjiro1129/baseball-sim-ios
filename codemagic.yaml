@@ -1,13 +1,16 @@
-# ===== BASEBALL SIM — 動作確認用ビルド（最小構成）=====
+# ===== BASEBALL SIM — iOS ビルド設定 =====
 # 置き場所: リポジトリのルート（package.json と同じ階層）に codemagic.yaml として置く
-# 署名なし・Apple Developer 登録不要。CIでビルドが通るかだけを確認します。
 
 workflows:
+
+  # --------------------------------------------------------------
+  # A) 動作確認ビルド（署名なし・Apple登録不要）※残しておくと便利
+  # --------------------------------------------------------------
   ios-check:
     name: BASEBALL SIM - Build Check
     max_build_duration: 60
     environment:
-      node: 22          # Capacitor 8 は Node 22 以上が必須
+      node: 22
       xcode: latest
     scripts:
       - name: npm install
@@ -16,9 +19,48 @@ workflows:
         script: |
           mkdir -p ios/App/App.xcodeproj/xcshareddata/xcschemes
           echo "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPFNjaGVtZQogICBMYXN0VXBncmFkZVZlcnNpb24gPSAiMTUwMCIKICAgdmVyc2lvbiA9ICIxLjciPgogICA8QnVpbGRBY3Rpb24KICAgICAgcGFyYWxsZWxpemVCdWlsZGFibGVzID0gIllFUyIKICAgICAgYnVpbGRJbXBsaWNpdERlcGVuZGVuY2llcyA9ICJZRVMiPgogICAgICA8QnVpbGRBY3Rpb25FbnRyaWVzPgogICAgICAgICA8QnVpbGRBY3Rpb25FbnRyeQogICAgICAgICAgICBidWlsZEZvclRlc3RpbmcgPSAiWUVTIgogICAgICAgICAgICBidWlsZEZvclJ1bm5pbmcgPSAiWUVTIgogICAgICAgICAgICBidWlsZEZvclByb2ZpbGluZyA9ICJZRVMiCiAgICAgICAgICAgIGJ1aWxkRm9yQXJjaGl2aW5nID0gIllFUyIKICAgICAgICAgICAgYnVpbGRGb3JBbmFseXppbmcgPSAiWUVTIj4KICAgICAgICAgICAgPEJ1aWxkYWJsZVJlZmVyZW5jZQogICAgICAgICAgICAgICBCdWlsZGFibGVJZGVudGlmaWVyID0gInByaW1hcnkiCiAgICAgICAgICAgICAgIEJsdWVwcmludElkZW50aWZpZXIgPSAiNTA0RUMzMDMxRkVENzk2NTAwMTY4NTFGIgogICAgICAgICAgICAgICBCdWlsZGFibGVOYW1lID0gIkFwcC5hcHAiCiAgICAgICAgICAgICAgIEJsdWVwcmludE5hbWUgPSAiQXBwIgogICAgICAgICAgICAgICBSZWZlcmVuY2VkQ29udGFpbmVyID0gImNvbnRhaW5lcjpBcHAueGNvZGVwcm9qIj4KICAgICAgICAgICAgPC9CdWlsZGFibGVSZWZlcmVuY2U+CiAgICAgICAgIDwvQnVpbGRBY3Rpb25FbnRyeT4KICAgICAgPC9CdWlsZEFjdGlvbkVudHJpZXM+CiAgIDwvQnVpbGRBY3Rpb24+CiAgIDxUZXN0QWN0aW9uCiAgICAgIGJ1aWxkQ29uZmlndXJhdGlvbiA9ICJEZWJ1ZyIKICAgICAgc2VsZWN0ZWREZWJ1Z2dlcklkZW50aWZpZXIgPSAiWGNvZGUuRGVidWdnZXJGb3VuZGF0aW9uLkRlYnVnZ2VyLkxMREIiCiAgICAgIHNlbGVjdGVkTGF1bmNoZXJJZGVudGlmaWVyID0gIlhjb2RlLkRlYnVnZ2VyRm91bmRhdGlvbi5MYXVuY2hlci5MTERCIgogICAgICBzaG91bGRVc2VMYXVuY2hTY2hlbWVBcmdzRW52ID0gIllFUyI+CiAgIDwvVGVzdEFjdGlvbj4KICAgPExhdW5jaEFjdGlvbgogICAgICBidWlsZENvbmZpZ3VyYXRpb24gPSAiRGVidWciCiAgICAgIHNlbGVjdGVkRGVidWdnZXJJZGVudGlmaWVyID0gIlhjb2RlLkRlYnVnZ2VyRm91bmRhdGlvbi5EZWJ1Z2dlci5MTERCIgogICAgICBzZWxlY3RlZExhdW5jaGVySWRlbnRpZmllciA9ICJYY29kZS5EZWJ1Z2dlckZvdW5kYXRpb24uTGF1bmNoZXIuTExEQiIKICAgICAgbGF1bmNoU3R5bGUgPSAiMCIKICAgICAgdXNlQ3VzdG9tV29ya2luZ0RpcmVjdG9yeSA9ICJOTyIKICAgICAgaWdub3Jlc1BlcnNpc3RlbnRTdGF0ZU9uTGF1bmNoID0gIk5PIgogICAgICBkZWJ1Z0RvY3VtZW50VmVyc2lvbmluZyA9ICJZRVMiCiAgICAgIGRlYnVnU2VydmljZUV4dGVuc2lvbiA9ICJpbnRlcm5hbCIKICAgICAgYWxsb3dMb2NhdGlvblNpbXVsYXRpb24gPSAiWUVTIj4KICAgICAgPEJ1aWxkYWJsZVByb2R1Y3RSdW5uYWJsZQogICAgICAgICBydW5uYWJsZURlYnVnZ2luZ01vZGUgPSAiMCI+CiAgICAgICAgIDxCdWlsZGFibGVSZWZlcmVuY2UKICAgICAgICAgICAgQnVpbGRhYmxlSWRlbnRpZmllciA9ICJwcmltYXJ5IgogICAgICAgICAgICBCbHVlcHJpbnRJZGVudGlmaWVyID0gIjUwNEVDMzAzMUZFRDc5NjUwMDE2ODUxRiIKICAgICAgICAgICAgQnVpbGRhYmxlTmFtZSA9ICJBcHAuYXBwIgogICAgICAgICAgICBCbHVlcHJpbnROYW1lID0gIkFwcCIKICAgICAgICAgICAgUmVmZXJlbmNlZENvbnRhaW5lciA9ICJjb250YWluZXI6QXBwLnhjb2RlcHJvaiI+CiAgICAgICAgIDwvQnVpbGRhYmxlUmVmZXJlbmNlPgogICAgICA8L0J1aWxkYWJsZVByb2R1Y3RSdW5uYWJsZT4KICAgPC9MYXVuY2hBY3Rpb24+CiAgIDxQcm9maWxlQWN0aW9uCiAgICAgIGJ1aWxkQ29uZmlndXJhdGlvbiA9ICJSZWxlYXNlIgogICAgICBzaG91bGRVc2VMYXVuY2hTY2hlbWVBcmdzRW52ID0gIllFUyIKICAgICAgc2F2ZWRUb29sSWRlbnRpZmllciA9ICIiCiAgICAgIHVzZUN1c3RvbVdvcmtpbmdEaXJlY3RvcnkgPSAiTk8iCiAgICAgIGRlYnVnRG9jdW1lbnRWZXJzaW9uaW5nID0gIllFUyI+CiAgICAgIDxCdWlsZGFibGVQcm9kdWN0UnVubmFibGUKICAgICAgICAgcnVubmFibGVEZWJ1Z2dpbmdNb2RlID0gIjAiPgogICAgICAgICA8QnVpbGRhYmxlUmVmZXJlbmNlCiAgICAgICAgICAgIEJ1aWxkYWJsZUlkZW50aWZpZXIgPSAicHJpbWFyeSIKICAgICAgICAgICAgQmx1ZXByaW50SWRlbnRpZmllciA9ICI1MDRFQzMwMzFGRUQ3OTY1MDAxNjg1MUYiCiAgICAgICAgICAgIEJ1aWxkYWJsZU5hbWUgPSAiQXBwLmFwcCIKICAgICAgICAgICAgQmx1ZXByaW50TmFtZSA9ICJBcHAiCiAgICAgICAgICAgIFJlZmVyZW5jZWRDb250YWluZXIgPSAiY29udGFpbmVyOkFwcC54Y29kZXByb2oiPgogICAgICAgICA8L0J1aWxkYWJsZVJlZmVyZW5jZT4KICAgICAgPC9CdWlsZGFibGVQcm9kdWN0UnVubmFibGU+CiAgIDwvUHJvZmlsZUFjdGlvbj4KICAgPEFuYWx5emVBY3Rpb24KICAgICAgYnVpbGRDb25maWd1cmF0aW9uID0gIkRlYnVnIj4KICAgPC9BbmFseXplQWN0aW9uPgogICA8QXJjaGl2ZUFjdGlvbgogICAgICBidWlsZENvbmZpZ3VyYXRpb24gPSAiUmVsZWFzZSIKICAgICAgcmV2ZWFsQXJjaGl2ZUluT3JnYW5pemVyID0gIllFUyI+CiAgIDwvQXJjaGl2ZUFjdGlvbj4KPC9TY2hlbWU+Cg==" | base64 --decode > ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme
-          ls -la ios/App/App.xcodeproj/xcshareddata/xcschemes
       - name: Capacitor sync
         script: npx cap sync ios
       - name: Build (no code signing)
         script: |
           xcodebuild -project "ios/App/App.xcodeproj" -scheme "App" -configuration Release -sdk iphoneos -destination "generic/platform=iOS" build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+
+  # --------------------------------------------------------------
+  # B) TestFlight 配信ビルド（実機テスト用）
+  # --------------------------------------------------------------
+  ios-testflight:
+    name: BASEBALL SIM - iOS TestFlight
+    max_build_duration: 90
+    integrations:
+      app_store_connect: AppStoreConnect
+    environment:
+      node: 22
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.nakahomes.baseballsim
+    scripts:
+      - name: npm install
+        script: npm install
+      - name: Generate shared scheme (App)
+        script: |
+          mkdir -p ios/App/App.xcodeproj/xcshareddata/xcschemes
+          echo "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPFNjaGVtZQogICBMYXN0VXBncmFkZVZlcnNpb24gPSAiMTUwMCIKICAgdmVyc2lvbiA9ICIxLjciPgogICA8QnVpbGRBY3Rpb24KICAgICAgcGFyYWxsZWxpemVCdWlsZGFibGVzID0gIllFUyIKICAgICAgYnVpbGRJbXBsaWNpdERlcGVuZGVuY2llcyA9ICJZRVMiPgogICAgICA8QnVpbGRBY3Rpb25FbnRyaWVzPgogICAgICAgICA8QnVpbGRBY3Rpb25FbnRyeQogICAgICAgICAgICBidWlsZEZvclRlc3RpbmcgPSAiWUVTIgogICAgICAgICAgICBidWlsZEZvclJ1bm5pbmcgPSAiWUVTIgogICAgICAgICAgICBidWlsZEZvclByb2ZpbGluZyA9ICJZRVMiCiAgICAgICAgICAgIGJ1aWxkRm9yQXJjaGl2aW5nID0gIllFUyIKICAgICAgICAgICAgYnVpbGRGb3JBbmFseXppbmcgPSAiWUVTIj4KICAgICAgICAgICAgPEJ1aWxkYWJsZVJlZmVyZW5jZQogICAgICAgICAgICAgICBCdWlsZGFibGVJZGVudGlmaWVyID0gInByaW1hcnkiCiAgICAgICAgICAgICAgIEJsdWVwcmludElkZW50aWZpZXIgPSAiNTA0RUMzMDMxRkVENzk2NTAwMTY4NTFGIgogICAgICAgICAgICAgICBCdWlsZGFibGVOYW1lID0gIkFwcC5hcHAiCiAgICAgICAgICAgICAgIEJsdWVwcmludE5hbWUgPSAiQXBwIgogICAgICAgICAgICAgICBSZWZlcmVuY2VkQ29udGFpbmVyID0gImNvbnRhaW5lcjpBcHAueGNvZGVwcm9qIj4KICAgICAgICAgICAgPC9CdWlsZGFibGVSZWZlcmVuY2U+CiAgICAgICAgIDwvQnVpbGRBY3Rpb25FbnRyeT4KICAgICAgPC9CdWlsZEFjdGlvbkVudHJpZXM+CiAgIDwvQnVpbGRBY3Rpb24+CiAgIDxUZXN0QWN0aW9uCiAgICAgIGJ1aWxkQ29uZmlndXJhdGlvbiA9ICJEZWJ1ZyIKICAgICAgc2VsZWN0ZWREZWJ1Z2dlcklkZW50aWZpZXIgPSAiWGNvZGUuRGVidWdnZXJGb3VuZGF0aW9uLkRlYnVnZ2VyLkxMREIiCiAgICAgIHNlbGVjdGVkTGF1bmNoZXJJZGVudGlmaWVyID0gIlhjb2RlLkRlYnVnZ2VyRm91bmRhdGlvbi5MYXVuY2hlci5MTERCIgogICAgICBzaG91bGRVc2VMYXVuY2hTY2hlbWVBcmdzRW52ID0gIllFUyI+CiAgIDwvVGVzdEFjdGlvbj4KICAgPExhdW5jaEFjdGlvbgogICAgICBidWlsZENvbmZpZ3VyYXRpb24gPSAiRGVidWciCiAgICAgIHNlbGVjdGVkRGVidWdnZXJJZGVudGlmaWVyID0gIlhjb2RlLkRlYnVnZ2VyRm91bmRhdGlvbi5EZWJ1Z2dlci5MTERCIgogICAgICBzZWxlY3RlZExhdW5jaGVySWRlbnRpZmllciA9ICJYY29kZS5EZWJ1Z2dlckZvdW5kYXRpb24uTGF1bmNoZXIuTExEQiIKICAgICAgbGF1bmNoU3R5bGUgPSAiMCIKICAgICAgdXNlQ3VzdG9tV29ya2luZ0RpcmVjdG9yeSA9ICJOTyIKICAgICAgaWdub3Jlc1BlcnNpc3RlbnRTdGF0ZU9uTGF1bmNoID0gIk5PIgogICAgICBkZWJ1Z0RvY3VtZW50VmVyc2lvbmluZyA9ICJZRVMiCiAgICAgIGRlYnVnU2VydmljZUV4dGVuc2lvbiA9ICJpbnRlcm5hbCIKICAgICAgYWxsb3dMb2NhdGlvblNpbXVsYXRpb24gPSAiWUVTIj4KICAgICAgPEJ1aWxkYWJsZVByb2R1Y3RSdW5uYWJsZQogICAgICAgICBydW5uYWJsZURlYnVnZ2luZ01vZGUgPSAiMCI+CiAgICAgICAgIDxCdWlsZGFibGVSZWZlcmVuY2UKICAgICAgICAgICAgQnVpbGRhYmxlSWRlbnRpZmllciA9ICJwcmltYXJ5IgogICAgICAgICAgICBCbHVlcHJpbnRJZGVudGlmaWVyID0gIjUwNEVDMzAzMUZFRDc5NjUwMDE2ODUxRiIKICAgICAgICAgICAgQnVpbGRhYmxlTmFtZSA9ICJBcHAuYXBwIgogICAgICAgICAgICBCbHVlcHJpbnROYW1lID0gIkFwcCIKICAgICAgICAgICAgUmVmZXJlbmNlZENvbnRhaW5lciA9ICJjb250YWluZXI6QXBwLnhjb2RlcHJvaiI+CiAgICAgICAgIDwvQnVpbGRhYmxlUmVmZXJlbmNlPgogICAgICA8L0J1aWxkYWJsZVByb2R1Y3RSdW5uYWJsZT4KICAgPC9MYXVuY2hBY3Rpb24+CiAgIDxQcm9maWxlQWN0aW9uCiAgICAgIGJ1aWxkQ29uZmlndXJhdGlvbiA9ICJSZWxlYXNlIgogICAgICBzaG91bGRVc2VMYXVuY2hTY2hlbWVBcmdzRW52ID0gIllFUyIKICAgICAgc2F2ZWRUb29sSWRlbnRpZmllciA9ICIiCiAgICAgIHVzZUN1c3RvbVdvcmtpbmdEaXJlY3RvcnkgPSAiTk8iCiAgICAgIGRlYnVnRG9jdW1lbnRWZXJzaW9uaW5nID0gIllFUyI+CiAgICAgIDxCdWlsZGFibGVQcm9kdWN0UnVubmFibGUKICAgICAgICAgcnVubmFibGVEZWJ1Z2dpbmdNb2RlID0gIjAiPgogICAgICAgICA8QnVpbGRhYmxlUmVmZXJlbmNlCiAgICAgICAgICAgIEJ1aWxkYWJsZUlkZW50aWZpZXIgPSAicHJpbWFyeSIKICAgICAgICAgICAgQmx1ZXByaW50SWRlbnRpZmllciA9ICI1MDRFQzMwMzFGRUQ3OTY1MDAxNjg1MUYiCiAgICAgICAgICAgIEJ1aWxkYWJsZU5hbWUgPSAiQXBwLmFwcCIKICAgICAgICAgICAgQmx1ZXByaW50TmFtZSA9ICJBcHAiCiAgICAgICAgICAgIFJlZmVyZW5jZWRDb250YWluZXIgPSAiY29udGFpbmVyOkFwcC54Y29kZXByb2oiPgogICAgICAgICA8L0J1aWxkYWJsZVJlZmVyZW5jZT4KICAgICAgPC9CdWlsZGFibGVQcm9kdWN0UnVubmFibGU+CiAgIDwvUHJvZmlsZUFjdGlvbj4KICAgPEFuYWx5emVBY3Rpb24KICAgICAgYnVpbGRDb25maWd1cmF0aW9uID0gIkRlYnVnIj4KICAgPC9BbmFseXplQWN0aW9uPgogICA8QXJjaGl2ZUFjdGlvbgogICAgICBidWlsZENvbmZpZ3VyYXRpb24gPSAiUmVsZWFzZSIKICAgICAgcmV2ZWFsQXJjaGl2ZUluT3JnYW5pemVyID0gIllFUyI+CiAgIDwvQXJjaGl2ZUFjdGlvbj4KPC9TY2hlbWU+Cg==" | base64 --decode > ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme
+      - name: Capacitor sync
+        script: npx cap sync ios
+      - name: Set build number
+        script: |
+          cd "$CM_BUILD_DIR/ios/App"
+          agvtool new-version -all "$BUILD_NUMBER" || true
+      - name: Set up code signing
+        script: xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa --project "ios/App/App.xcodeproj" --scheme "App"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
