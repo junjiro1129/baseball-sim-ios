@@ -42,18 +42,26 @@ workflows:
       - name: Code signing (証明書とプロファイルを作成して適用)
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files "com.nakahomes.baseballsim" \
-            --type IOS_APP_STORE \
-            --create
+          app-store-connect fetch-signing-files "com.nakahomes.baseballsim" --type IOS_APP_STORE --create
           keychain add-certificates
           xcode-project use-profiles
       - name: Set build number
         script: |
           cd "$CM_BUILD_DIR/ios/App"
           agvtool new-version -all "$BUILD_NUMBER" || true
-      - name: Build IPA
+      - name: Build IPA (手動署名を明示)
         script: |
-          xcode-project build-ipa --project "ios/App/App.xcodeproj" --scheme "App"
+          PROFILE_PATH=$(ls -t "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision | head -n1)
+          PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | plutil -extract Name raw -o - -)
+          echo "使用するプロファイル: $PROFILE_NAME"
+          xcode-project build-ipa \
+            --project "ios/App/App.xcodeproj" \
+            --scheme "App" \
+            -- \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=A8L4FSNY6Z \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            "PROVISIONING_PROFILE_SPECIFIER=$PROFILE_NAME"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
