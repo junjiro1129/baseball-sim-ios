@@ -1,9 +1,9 @@
 # ===== BASEBALL SIM — iOS ビルド設定 =====
 # 置き場所: リポジトリのルート（package.json と同じ階層）に codemagic.yaml として置く
 # 前提: Codemagic の Environment variables に group "appstore" で以下3つを登録済み
-#   CM_CERTIFICATE           = 証明書(.p12)のBase64
-#   CM_CERTIFICATE_PASSWORD  = 証明書のパスワード
-#   CM_PROVISIONING          = プロファイル(.mobileprovision)のBase64
+#   CM_CERTIFICATE / CM_CERTIFICATE_PASSWORD / CM_PROVISIONING
+#
+# ★アップデート時は下の APP_VERSION を上げること（例: 1.0.1 → 1.0.2）
 
 workflows:
 
@@ -34,6 +34,8 @@ workflows:
     environment:
       groups:
         - appstore
+      vars:
+        APP_VERSION: "1.0.1"     # ← アップデートのたびにここを上げる
       node: 22
       xcode: latest
     scripts:
@@ -47,21 +49,21 @@ workflows:
         script: npx cap sync ios
       - name: Set up code signing (from env vars)
         script: |
-          # キーチェーン初期化
           keychain initialize
-          # 証明書(.p12)を復元して登録
           echo "$CM_CERTIFICATE" | base64 --decode > /tmp/cert.p12
           keychain add-certificates --certificate /tmp/cert.p12 --certificate-password "$CM_CERTIFICATE_PASSWORD"
-          # プロファイルを復元して所定の場所へ配置
           PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
           mkdir -p "$PROFILES_DIR"
           echo "$CM_PROVISIONING" | base64 --decode > "$PROFILES_DIR/BaseballSim_AppStore.mobileprovision"
-          # プロファイルをプロジェクトに適用
           xcode-project use-profiles --project "$CM_BUILD_DIR/ios/App/App.xcodeproj" --warn-only
-      - name: Set build number
+      - name: Set version and build number
         script: |
           cd "$CM_BUILD_DIR/ios/App"
+          agvtool new-marketing-version "$APP_VERSION"
           agvtool new-version -all "$BUILD_NUMBER" || true
+          echo "--- 設定後の値 ---"
+          agvtool what-marketing-version -terse1 || true
+          agvtool what-version -terse || true
       - name: Build IPA
         script: |
           xcode-project build-ipa --project "ios/App/App.xcodeproj" --scheme "App"
