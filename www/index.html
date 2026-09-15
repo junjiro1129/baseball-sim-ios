@@ -215,6 +215,36 @@ label{font-size:.8rem;color:var(--text2);display:block;margin-bottom:4px;letter-
   .prow select.ed-cell{padding:.3rem 0!important}
   .prow{gap:.2rem!important}
 
+  /* ===== 選手カード（閲覧専用） ===== */
+  .pcard-back{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:950;
+    display:none;align-items:center;justify-content:center;padding:.8rem}
+  .pcard-back.show{display:flex}
+  .pcard{width:100%;max-width:430px;max-height:88vh;overflow-y:auto;
+    background:#15171a;border:1px solid #3a3f45;border-radius:16px;padding:1rem .95rem}
+  .pcard-head{display:flex;align-items:flex-start;gap:.6rem;margin-bottom:.8rem}
+  .pcard-pos{display:inline-block;background:#2b3138;color:var(--text2);border-radius:5px;
+    padding:.12rem .42rem;font-size:.66rem;margin-right:.35rem;vertical-align:middle}
+  .pcard-name{font-size:1.12rem;font-weight:700;color:#fff;line-height:1.3}
+  .pcard-sub{font-size:.7rem;color:var(--text3);margin-top:.15rem}
+  .pcard-ovr{margin-left:auto;text-align:right;flex-shrink:0}
+  .pcard-ovr b{display:block;font-size:1.5rem;font-weight:800;color:#fff;line-height:1}
+  .pcard-ovr span{font-size:.66rem;color:var(--text3)}
+  .grid-ab{display:grid;grid-template-columns:repeat(4,1fr);gap:.3rem;margin-bottom:.55rem}
+  .ab{background:#1d2126;border:1px solid #2e343b;border-radius:8px;padding:.32rem .1rem;text-align:center}
+  .ab-l{font-size:.6rem;color:var(--text3);margin-bottom:.16rem;letter-spacing:.02em}
+  .ab-g{font-size:1.05rem;font-weight:800;line-height:1}
+  .ab-v{font-size:.62rem;color:var(--text3);margin-top:.12rem}
+  .gA{color:#f5e642}.gB{color:#5ac8fa}.gC{color:#4cd964}.gD{color:#ff9f0a}.gE{color:#b0b6bd}
+  .pcard-sec{font-size:.68rem;color:var(--gold);margin:.7rem 0 .35rem;letter-spacing:.06em}
+  .grid-st{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem}
+  .st{background:#1d2126;border:1px solid #2e343b;border-radius:8px;padding:.34rem .1rem;text-align:center}
+  .st-l{font-size:.6rem;color:var(--text3);margin-bottom:.14rem}
+  .st-v{font-size:.92rem;font-weight:700;color:#fff}
+  .pcard-none{font-size:.72rem;color:var(--text3);text-align:center;padding:.5rem}
+  .tap-name{cursor:pointer;text-decoration:underline;text-decoration-color:#4a5058;
+    text-underline-offset:2px}
+  .tap-name:active{opacity:.6}
+
   /* チーム編集画面のカードはモバイルではpaddingを詰めて行幅を確保 */
   #editor-screen .card[style*="padding"]{padding:.5rem .45rem!important}
 
@@ -445,6 +475,11 @@ select.spd{font-family:'Courier New',monospace;font-size:.82rem;padding:.45rem .
 
   <div style="margin-top:1.2rem;font-size:.84rem;color:var(--text3)" id="pro-lbl"></div>
 
+</div>
+
+<!-- PLAYER CARD (view only) -->
+<div id="pcard-back" class="pcard-back" onclick="if(event.target===this)hidePlayerCard()">
+  <div class="pcard" id="pcard-body"></div>
 </div>
 
 <!-- SELECT -->
@@ -1161,6 +1196,12 @@ function gotoOrderScreen(){
   gotoScreen('order-screen');
 }
 
+// True while a postseason game is in progress. Declared as a hoisted function so it
+// can be called from code that runs before `currentPSGame` is initialized.
+function inPostseason(){
+  try{return typeof currentPSGame!=='undefined'&&currentPSGame!==null;}catch(e){return false;}
+}
+
 // Pick the best available starting pitcher index, considering rest days.
 // Returns the index in team.pitchers[] of the strongest SP with rest=0;
 // if all SPs need rest, returns the SP with lowest rest. Falls back to 0.
@@ -1185,7 +1226,9 @@ function pickFreshStarterIdx(team,restMap){
 function buildInitialOrder(team){
   // Choose default starter: highest-ability SP with rest=0, mirroring quickSim's logic.
   // Falls back to lowest-rest SP, then to index 0.
-  const inLeagueCtx=(fromLeague||fromStandings)&&league&&league.active;
+  // Include postseason games: rest days must be honored there too, otherwise the
+  // ace would be auto-selected for every postseason start.
+  const inLeagueCtx=(fromLeague||fromStandings||inPostseason())&&league&&league.active;
   const restMap=(inLeagueCtx&&league.restDays&&league.restDays[team.id])||{};
   const defaultPitcherIdx=pickFreshStarterIdx(team,restMap);
 
@@ -1331,7 +1374,9 @@ function renderOrderPitchers(od){
   const el=document.getElementById('ord-pitcher-list');if(!el)return;
   // Look up rest days whenever we're in a league context — either from a watched game
   // (fromLeague) or from the standings screen (fromStandings).
-  const inLeagueCtx=(fromLeague||fromStandings)&&league&&league.active;
+  // Include postseason games: rest days must be honored there too, otherwise the
+  // ace would be auto-selected for every postseason start.
+  const inLeagueCtx=(fromLeague||fromStandings||inPostseason())&&league&&league.active;
   const restMap=(inLeagueCtx&&league.restDays&&league.restDays[od.team.id])||{};
   el.innerHTML=od.team.pitchers.map((p,i)=>{
     const rest=restMap[p.name]||0;
@@ -1356,7 +1401,9 @@ function selectOrderPitcher(i){
   // Defensive: refuse to select a resting pitcher
   const od=orderData[curOrderTeam];
   const p=od.team.pitchers[i];
-  const inLeagueCtx=(fromLeague||fromStandings)&&league&&league.active;
+  // Include postseason games: rest days must be honored there too, otherwise the
+  // ace would be auto-selected for every postseason start.
+  const inLeagueCtx=(fromLeague||fromStandings||inPostseason())&&league&&league.active;
   const restMap=(inLeagueCtx&&league.restDays&&league.restDays[od.team.id])||{};
   if(p&&(restMap[p.name]||0)>0){
     return;  // resting; cannot select
@@ -1537,7 +1584,9 @@ function autoOrderTeam(od){
   // Bench players never carry a position
   od.bench=benchPlayers.map(p=>{const{score,pos:_p,...rest}=p;return rest;});
   // Auto-pick best pitcher (respecting rest days if in a league context)
-  const inLeagueCtx=(fromLeague||fromStandings)&&league&&league.active;
+  // Include postseason games: rest days must be honored there too, otherwise the
+  // ace would be auto-selected for every postseason start.
+  const inLeagueCtx=(fromLeague||fromStandings||inPostseason())&&league&&league.active;
   const restMap=(inLeagueCtx&&league.restDays&&league.restDays[od.team.id])||{};
   let bestPi=0,bestScore=-1;
   od.team.pitchers.forEach((p,i)=>{
@@ -2069,9 +2118,11 @@ function endGame(){
     // (or not tracked at all, per NPB convention where titles are regular-season only).
     if(!currentPSGame){
       accBat(awayT,awayT.name);accBat(homeT,homeT.name);accPit(awayT,awayT.name);accPit(homeT,homeT.name);
-      // Update league rest days based on who actually pitched in this watched game
-      updateRestDays(awayT,homeT);
     }
+    // Update league rest days based on who actually pitched — ALWAYS run, including
+    // postseason. Only season stats are skipped in the postseason; the rotation must
+    // keep advancing or the same starter would pitch every postseason game.
+    updateRestDays(awayT,homeT);
     // Snapshot full game data for history viewing
     // Build summary AFTER accBat/accPit so season totals (leaguePit) include this game
     const summary=buildResultSummary(awayT,homeT);
@@ -4515,9 +4566,10 @@ function quickSim(awayId,homeId){
   // Skip stat accumulation in postseason (quickSimNoTie=true is set during postseason auto-sim)
   if(!quickSimNoTie){
     accBat(at,at.name);accBat(ht,ht.name);accPit(at,at.name);accPit(ht,ht.name);
-    // Update league rest days using the shared helper (same logic as watched games)
-    updateRestDays(at,ht);
   }
+  // Update league rest days — ALWAYS run, including postseason auto-sim, so the
+  // starting rotation advances between postseason games.
+  updateRestDays(at,ht);
   // Snapshot for history viewing (no play-by-play log for quick sim)
   // Build summary now — accBat/accPit have already run above
   const summary=buildResultSummary(at,ht);
@@ -4623,7 +4675,9 @@ function restoreSavedOrder(team){
   if(pitcherIdx<0)pitcherIdx=0;
   // If the saved pitcher is currently resting, pick a fresh SP instead
   // (preserves user intent on day 0 but auto-rotates on the next visit).
-  const inLeagueCtx=(fromLeague||fromStandings)&&league&&league.active;
+  // Include postseason games: rest days must be honored there too, otherwise the
+  // ace would be auto-selected for every postseason start.
+  const inLeagueCtx=(fromLeague||fromStandings||inPostseason())&&league&&league.active;
   const restMap=(inLeagueCtx&&league.restDays&&league.restDays[team.id])||{};
   const savedPitcher=team.pitchers[pitcherIdx];
   if(savedPitcher&&(restMap[savedPitcher.name]||0)>0){
@@ -4661,6 +4715,109 @@ function switchLeagueTab(side){
   renderStandings();
   renderStats(curStatsType);
 }
+
+// ===== 選手カード（閲覧専用・編集不可） =====
+function abGrade(v){
+  v=Number(v)||0;
+  if(v>=85)return {g:'A',c:'gA'};
+  if(v>=75)return {g:'B',c:'gB'};
+  if(v>=65)return {g:'C',c:'gC'};
+  if(v>=55)return {g:'D',c:'gD'};
+  return {g:'E',c:'gE'};
+}
+function ovrOf(p){
+  const vals=p.role?[p.spd,p.ctrl,p.stam]:[p.meet,p.power,p.speed,p.def];
+  const ns=vals.map(v=>Number(v)||0).filter(v=>v>0);
+  if(!ns.length)return 0;
+  return Math.round(ns.reduce((a,b)=>a+b,0)/ns.length);
+}
+function findPlayerObj(teamName,playerName){
+  const tm=teams.find(t=>t.name===teamName||t.abbr===teamName);
+  if(!tm)return null;
+  const pools=[tm.roster,tm.pitchers,tm.lineup,tm.benchHitters];
+  for(const pool of pools){
+    if(!pool)continue;
+    const hit=pool.find(p=>p&&p.name===playerName);
+    if(hit)return hit;
+  }
+  return null;
+}
+function pcFmtRate(v){
+  if(v===null||v===undefined||isNaN(v))return '-';
+  return (typeof bbAvg==='function')?bbAvg(v):Number(v).toFixed(3);
+}
+function showPlayerCard(teamName,playerName){
+  const box=document.getElementById('pcard-body');
+  const back=document.getElementById('pcard-back');
+  if(!box||!back)return;
+  const ja=(lang==='ja');
+  const obj=findPlayerObj(teamName,playerName);
+  const isP=!!(obj&&obj.role);
+  const bs=(typeof leagueBat!=='undefined')?leagueBat[teamName+':'+playerName]:null;
+  const ps=(typeof leaguePit!=='undefined')?leaguePit[teamName+':'+playerName]:null;
+  let h='';
+  const posLabel=obj?(obj.role||obj.pos||''):'';
+  const ovr=obj?ovrOf(obj):0;
+  h+='<div class="pcard-head"><div><div>'+
+     (posLabel?'<span class="pcard-pos">'+posLabel+'</span>':'')+
+     '<span class="pcard-name">'+playerName+'</span></div>'+
+     '<div class="pcard-sub">'+teamName+'</div></div>';
+  if(ovr)h+='<div class="pcard-ovr"><b>'+ovr+'</b><span>'+(ja?'総合':'OVR')+'</span></div>';
+  h+='</div>';
+  if(obj){
+    h+='<div class="pcard-sec">'+(ja?'◆ 能力':'◆ RATINGS')+'</div><div class="grid-ab">';
+    const abs=isP
+      ?[[ja?'球速':'VELO',obj.spd],[ja?'制球':'CTRL',obj.ctrl],[ja?'スタミナ':'STAM',obj.stam]]
+      :[[ja?'ミート':'CON',obj.meet],[ja?'パワー':'PWR',obj.power],[ja?'走力':'SPD',obj.speed],[ja?'守備':'DEF',obj.def]];
+    abs.forEach(function(a){
+      const g=abGrade(a[1]);
+      h+='<div class="ab"><div class="ab-l">'+a[0]+'</div><div class="ab-g '+g.c+'">'+g.g+
+         '</div><div class="ab-v">'+(Number(a[1])||0)+'</div></div>';
+    });
+    h+='</div>';
+  }
+  if(isP&&ps){
+    const ip=ps.ip||0;
+    const era=ip>0?(ps.er*27/ip):null;
+    const whip=ip>0?(((ps.bb||0)+(ps.ha||0))*3/ip):null;
+    h+='<div class="pcard-sec">'+(ja?'◆ 今季成績':'◆ SEASON STATS')+'</div><div class="grid-st">';
+    const items=[[ja?'登板':'G',ps.g||0],[ja?'勝':'W',ps.w||0],[ja?'敗':'L',ps.l||0],
+      [ja?'セーブ':'SV',ps.s||0],
+      [ja?'投球回':'IP',(typeof fmtIP==='function')?fmtIP(ip):(ip/3).toFixed(1)],
+      [ja?'防御率':'ERA',era===null?'-':era.toFixed(2)],
+      [ja?'奪三振':'K',ps.k||0],[ja?'与四球':'BB',ps.bb||0],
+      [ja?'WHIP':'WHIP',whip===null?'-':whip.toFixed(2)]];
+    items.forEach(function(it){h+='<div class="st"><div class="st-l">'+it[0]+'</div><div class="st-v">'+it[1]+'</div></div>';});
+    h+='</div>';
+  }else if(!isP&&bs){
+    const ab=bs.atbats||0,h1=bs.hits||0,d=bs.doubles||0,t3=bs.triples||0,hr=bs.hrs||0;
+    const singles=Math.max(0,h1-d-t3-hr),tb=singles+2*d+3*t3+4*hr;
+    const avg=ab>0?h1/ab:null;
+    const pa=ab+(bs.bb||0)+(bs.sf||0);
+    const obp=pa>0?((h1+(bs.bb||0))/pa):null;
+    const slg=ab>0?(tb/ab):null;
+    const ops=(obp!==null&&slg!==null)?(obp+slg):null;
+    h+='<div class="pcard-sec">'+(ja?'◆ 今季成績':'◆ SEASON STATS')+'</div><div class="grid-st">';
+    const items=[[ja?'打数':'AB',ab],[ja?'安打':'H',h1],[ja?'打率':'AVG',avg===null?'-':pcFmtRate(avg)],
+      [ja?'本塁打':'HR',hr],[ja?'打点':'RBI',bs.rbi||0],[ja?'盗塁':'SB',bs.sb||0],
+      [ja?'出塁率':'OBP',obp===null?'-':pcFmtRate(obp)],
+      [ja?'長打率':'SLG',slg===null?'-':pcFmtRate(slg)],
+      [ja?'OPS':'OPS',ops===null?'-':pcFmtRate(ops)]];
+    items.forEach(function(it){h+='<div class="st"><div class="st-l">'+it[0]+'</div><div class="st-v">'+it[1]+'</div></div>';});
+    h+='</div>';
+  }else{
+    h+='<div class="pcard-sec">'+(ja?'◆ 今季成績':'◆ SEASON STATS')+'</div>'+
+       '<div class="pcard-none">'+(ja?'まだ出場記録がありません':'No games played yet')+'</div>';
+  }
+  h+='<button class="btn sm block" style="margin-top:.85rem" onclick="hidePlayerCard()">'+(ja?'閉じる':'Close')+'</button>';
+  box.innerHTML=h;
+  back.classList.add('show');
+}
+function hidePlayerCard(){
+  const back=document.getElementById('pcard-back');
+  if(back)back.classList.remove('show');
+}
+function escAttr(v){return String(v).replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;');}
 
 function renderStandings(){
   const standEl=document.getElementById('stand-tbl');
@@ -4714,19 +4871,18 @@ function renderStandings(){
     const calcMagic=()=>{
       if(rows.length<2)return null;
       const topRemaining=totalGames-top.g;
-      if(topRemaining<=0)return 'CHAMP';
       let maxRivalWins=0;
-      let anyRivalCanCatchUp=false;
       for(let i=1;i<rows.length;i++){
         const r=rows[i];
-        const rRemaining=totalGames-r.g;
-        const rMaxWins=r.w+rRemaining;
-        if(rMaxWins>top.w)anyRivalCanCatchUp=true;
+        const rMaxWins=r.w+Math.max(0,totalGames-r.g);
         if(rMaxWins>maxRivalWins)maxRivalWins=rMaxWins;
       }
-      if(anyRivalCanCatchUp)return null;
+      // M = wins still needed for the leader to finish above the best rival,
+      //     assuming that rival wins out.
       const M=maxRivalWins-top.w+1;
-      if(M<=0)return 'CHAMP';
+      if(M<=0)return 'CHAMP';           // rivals already mathematically eliminated
+      if(topRemaining<=0)return 'CHAMP';
+      if(M>topRemaining)return null;    // not yet attainable - no magic shown
       return M;
     };
     const topMagic=calcMagic();
@@ -4895,7 +5051,7 @@ function renderTitleRace(type,players,minQualifier){
         html+=`<div class="title-row">
           <div class="title-row-top">
             <span class="title-rank">${rankMark}</span>
-            <span class="title-name">${p.name}</span>
+            <span class="title-name tap-name" onclick="showPlayerCard('${escAttr(p.team)}','${escAttr(p.name)}')">${p.name}</span>
           </div>
           <div class="title-row-bot">
             <span class="title-team">${abbrFor(p.team)}</span>
@@ -5020,7 +5176,7 @@ function renderStats(type){
       const slgDisp=p.qualified?bbAvg(p.slg):'-';
       const dim=p.qualified?'':'color:var(--text3)';
       h+=`<tr>
-        <td class="L">${p.name}</td>
+        <td class="L"><span class="tap-name" onclick="showPlayerCard('${escAttr(p.team)}','${escAttr(p.name)}')">${p.name}</span></td>
         <td class="L" style="font-size:.78rem;color:var(--text2)">${abbrFor(p.team)}</td>
         <td>${p.atbats}</td><td>${p.hits}</td>
         <td style="${dim}">${avgDisp}</td>
@@ -5120,7 +5276,7 @@ function renderStats(type){
       const kbbDisp=p.qualified?p.kbb.toFixed(2):'-';
       const dim=p.qualified?'':'color:var(--text3)';
       h+=`<tr>
-        <td class="L">${p.name}</td>
+        <td class="L"><span class="tap-name" onclick="showPlayerCard('${escAttr(p.team)}','${escAttr(p.name)}')">${p.name}</span></td>
         <td class="L" style="font-size:.78rem;color:var(--text2)">${abbrFor(p.team)}</td>
         <td>${p.w}</td><td>${p.l}</td>
         <td>${p.s||0}</td><td>${p.h||0}</td>
