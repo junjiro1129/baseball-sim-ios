@@ -215,6 +215,15 @@ label{font-size:.8rem;color:var(--text2);display:block;margin-bottom:4px;letter-
   .prow select.ed-cell{padding:.3rem 0!important}
   .prow{gap:.2rem!important}
 
+  /* ===== 所属リーグ選択 ===== */
+  .lgsel{display:flex;gap:.4rem;margin-top:.15rem}
+  .lgsel-btn{flex:1;background:#242424;color:#c8cdd3;border:1px solid #3d3d3d;border-radius:8px;
+    padding:.48rem .2rem;font-size:.92rem;font-weight:700;cursor:pointer;letter-spacing:.04em}
+  .lgsel-btn.on{background:var(--gold);color:#111;border-color:var(--gold)}
+  .lgsel-btn:disabled{opacity:.45;cursor:not-allowed}
+  .lgsel-note{font-size:.74rem;color:#c8cdd3;margin-top:.35rem;line-height:1.5}
+  .lgsel-note.lock{color:#ffb84d}
+
   /* ===== 選手カード（閲覧専用） ===== */
   .pcard-back{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:950;
     display:none;align-items:center;justify-content:center;padding:.8rem}
@@ -642,6 +651,14 @@ select.spd{font-family:'Courier New',monospace;font-size:.82rem;padding:.45rem .
           <label class="ed-label" data-ja="略称（〜5文字）" data-en="Abbrev (≤5)">略称（〜5文字）</label>
           <input type="text" id="e-ab" class="ed-cell ed-cell-wide" maxlength="5" style="width:100%" oninput="updTeam('abbr',this.value)">
         </div>
+      </div>
+      <div class="mt">
+        <label class="ed-label" data-ja="所属リーグ" data-en="League">所属リーグ</label>
+        <div class="lgsel" id="e-lg">
+          <button type="button" class="lgsel-btn" data-side="a" onclick="updTeamLeague('a')">A</button>
+          <button type="button" class="lgsel-btn" data-side="b" onclick="updTeamLeague('b')">B</button>
+        </div>
+        <div class="lgsel-note" id="e-lg-note"></div>
       </div>
       <div class="flex mt">
         <button class="btn sm dan" onclick="delTeam()" data-ja="このチームを削除" data-en="Delete Team">このチームを削除</button>
@@ -3263,6 +3280,8 @@ function loadEdTeam(i){
   const tm=teams[i];
   const nm=document.getElementById('e-nm');if(nm)nm.value=tm.name;
   const ab=document.getElementById('e-ab');if(ab)ab.value=tm.abbr;
+  if(!tm.league)tm.league='a';   // 旧データ互換: 未設定はAとして扱う
+  renderLeagueSel();
 
   // Ensure full 26-man roster exists (migrate older data if needed)
   ensureFullRoster(tm);
@@ -3448,6 +3467,55 @@ function ensureFullRoster(tm){
 
 function updTeam(f,v){teams[edTeamIdx][f]=v;renderEdSels();}
 
+// ===== 所属リーグ（A/B）の編集 =====
+// リーグ戦が進行中は、teamIds/aIds/bIds と実所属がズレて順位表や日程が壊れるため変更不可。
+function leagueLocked(){return !!(typeof league!=='undefined'&&league&&league.active);}
+// 所属チーム数が少ない方のリーグを返す（同数なら 'a'）
+function lighterLeague(){
+  let a=0,b=0;
+  teams.forEach(t=>{((t.league||'a')==='b')?b++:a++;});
+  return b<a?'b':'a';
+}
+function updTeamLeague(side){
+  if(leagueLocked()){
+    alert(lang==='ja'?'リーグ戦の進行中は所属リーグを変更できません。\nリセットしてから変更してください。'
+                     :'Cannot change league while a season is in progress.\nReset the league first.');
+    return;
+  }
+  const tm=teams[edTeamIdx];
+  if(!tm)return;
+  tm.league=(side==='b')?'b':'a';
+  renderLeagueSel();
+  renderEdSels();
+}
+// 所属リーグUIの表示を現在の状態に合わせる
+function renderLeagueSel(){
+  const wrap=document.getElementById('e-lg');
+  const note=document.getElementById('e-lg-note');
+  if(!wrap)return;
+  const tm=teams[edTeamIdx];
+  const cur=(tm&&tm.league)||'a';
+  const locked=leagueLocked();
+  wrap.querySelectorAll('.lgsel-btn').forEach(b=>{
+    b.classList.toggle('on', b.dataset.side===cur);
+    b.disabled=locked;
+  });
+  if(!note)return;
+  let a=0,b=0;
+  teams.forEach(t=>{((t.league||'a')==='b')?b++:a++;});
+  if(locked){
+    note.className='lgsel-note lock';
+    note.textContent=(lang==='ja')
+      ?'リーグ戦の進行中は変更できません（リセット後に変更可）'
+      :'Locked while a season is in progress (reset to change)';
+  }else{
+    note.className='lgsel-note';
+    note.textContent=(lang==='ja')
+      ?`現在の内訳： A ${a}チーム / B ${b}チーム`
+      :`Current split: A ${a} / B ${b}`;
+  }
+}
+
 // Finalize editing: ensure data integrity, then return to menu
 function finishEditing(){
   // Ensure every team has unique starter positions and no bench positions
@@ -3505,6 +3573,9 @@ function addTeam(){
     id:Date.now(),
     name:lang==='ja'?"新チーム":"New Team",
     abbr:newAbbr,
+    // 所属リーグを必ず設定する。未設定だと参照側の既定値により全チームがAに寄ってしまう。
+    // 既定はチーム数が少ない側へ自動で振り分ける。
+    league:lighterLeague(),
     pitcher:newAce,
     lineup:[...newStarters,dhHitter],
     pitchers,
