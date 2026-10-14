@@ -3895,6 +3895,28 @@ function generateCS1Games(){
 }
 
 // Initialize CS Final Stage: 1st vs CS1 winner, best-of-6, 1st gets 1-win advantage
+// ===== CSファイナルステージ アドバンテージ判定（2026年ルール） =====
+// ファーストステージを勝ち上がった球団が次のいずれかに該当する場合、
+// リーグ1位球団のアドバンテージが1勝→2勝に増え、6戦制(4勝先取)→7戦制(5勝先取)になる。
+//   (1) レギュラーシーズンで優勝球団と10ゲーム差以上（10.0ちょうども該当）
+//   (2) レギュラーシーズンの勝率が5割未満（5割ちょうどは該当しない）
+// 判定は実際に勝ち上がった球団の成績で行う。
+function csFinalAdvantage(stand,winnerId){
+  const DEFAULT={adv:1,needed:4,games:6,bigGap:false,subFive:false};
+  if(!stand||stand.length<1)return DEFAULT;
+  const top=stand[0];
+  const win=stand.find(r=>r.id===winnerId);
+  if(!win||win.id===top.id)return DEFAULT;
+  // ゲーム差 = {(上位の勝 - 下位の勝) + (下位の敗 - 上位の敗)} / 2
+  const gb=((top.w-win.w)+(win.l-top.l))/2;
+  const bigGap=gb>=10;            // 10.0ちょうどは該当
+  const subFive=win.pct<0.5;      // 5割ちょうどは該当しない
+  if(bigGap||subFive){
+    return {adv:2,needed:5,games:7,bigGap,subFive,gb};
+  }
+  return {...DEFAULT,gb};
+}
+
 function initCS2(){
   ['a','b'].forEach(side=>{
     const stand=getLeagueStandings(side);
@@ -3905,11 +3927,18 @@ function initCS2(){
       league.postseason.cs2[side]=null;
       return;
     }
+    const ad=csFinalAdvantage(stand,winnerId);
     league.postseason.cs2[side]={
-      team1:stand[0].id,   // 1st place (home advantage + 1 win)
+      team1:stand[0].id,   // 1st place (home + advantage wins)
       team2:winnerId,      // CS1 winner
-      games:[],wins1:1,    // 1-win advantage for league winner
-      wins2:0,winner:null
+      games:[],
+      wins1:ad.adv,        // 2026年ルール: 条件次第で1勝または2勝のアドバンテージ
+      wins2:0,winner:null,
+      adv:ad.adv,          // 付与されたアドバンテージ勝数
+      needed:ad.needed,    // 日本シリーズ進出に必要な勝利数(4 or 5)
+      maxGames:ad.games,   // 最大試合数(6 or 7)
+      bigGap:ad.bigGap,    // 10ゲーム差以上で発動したか
+      subFive:ad.subFive   // 勝率5割未満で発動したか
     };
   });
   league.phase='cs2';
@@ -3923,8 +3952,9 @@ function generateCS2Games(){
     const cs=league.postseason.cs2[side];
     if(!cs)return;
     cs.games=[];
-    // Best-of-6: league winner needs 4 wins (has 1 advantage), so up to 6 games
-    for(let i=0;i<6;i++){
+    // 通常は最大6試合(4勝先取)。2勝アドバンテージ適用時は最大7試合(5勝先取)。
+    const maxG=cs.maxGames||6;
+    for(let i=0;i<maxG;i++){
       cs.games.push({
         id:baseId++,
         away:cs.team2,home:cs.team1,  // 1st place always home
@@ -4062,7 +4092,7 @@ function renderCSPanel(stage){
     }
     const t1=teams.find(x=>x.id===cs.team1);
     const t2=cs.team2!==null?teams.find(x=>x.id===cs.team2):null;
-    const needToWin=stage==='cs1'?2:4;  // best-of-3 needs 2 wins, best-of-6 needs 4
+    const needToWin=stage==='cs1'?2:(cs.needed||4);  // CS1は2勝先取 / CS2は4勝 or 5勝先取
     const t1Name=t1?.abbr||'?';
     const t2Name=t2?.abbr||(cs.bye?'BYE':'?');
     // Winner highlight
@@ -4081,8 +4111,15 @@ function renderCSPanel(stage){
         ${cs.bye?(lang==='ja'?'※チーム不足のため不戦勝':'(Bye due to team count)')
           :cs.winner!=null?(lang==='ja'?'シリーズ決着':'Series decided')
           :(stage==='cs1'?(lang==='ja'?'3戦先勝 ('+t1Name+'ホーム)':'Best of 3 ('+t1Name+' home)')
-                         :(lang==='ja'?'4戦先勝 ('+t1Name+'に1勝アドバンテージ・ホーム)':'First to 4 ('+t1Name+' +1W advantage, home)'))}
+                         :(lang==='ja'
+                            ? needToWin+'戦先勝 ('+t1Name+'に'+(cs.adv||1)+'勝アドバンテージ・ホーム)'
+                            : 'First to '+needToWin+' ('+t1Name+' +'+(cs.adv||1)+'W advantage, home)'))}
       </div>
+      ${(stage==='cs2'&&(cs.adv||1)>=2&&!cs.bye)?`<div style="font-size:.72rem;color:#ffb84d;margin-top:.3rem;text-align:center;line-height:1.5">
+        ${lang==='ja'
+          ? '◆ 2勝アドバンテージ適用（'+[cs.bigGap?'10ゲーム差以上':null,cs.subFive?'勝率5割未満':null].filter(Boolean).join('・')+'）'
+          : '◆ 2-win advantage ('+[cs.bigGap?'10+ GB':null,cs.subFive?'sub-.500':null].filter(Boolean).join(', ')+')'}
+      </div>`:''}
     </div>`;
   });
 
@@ -4198,8 +4235,9 @@ function recPSGame(game,scoreA,scoreH){
     // CS: team1 is always home
     if(homeWin)series.wins1++;
     else series.wins2++;
-    // CS1: best of 3 (2 wins to clinch); CS2: first to 4 wins (team1 has 1-win head start)
-    const needed=game.phase==='cs1'?2:4;
+    // CS1: 3戦2勝先取。CS2: 通常4勝先取、2勝アドバンテージ時は5勝先取。
+    // (series.needed は旧セーブデータ互換のため既定値4)
+    const needed=game.phase==='cs1'?2:(series.needed||4);
     if(series.wins1>=needed)series.winner=series.team1;
     else if(series.wins2>=needed)series.winner=series.team2;
   }
