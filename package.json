@@ -1,15 +1,18 @@
 {
   "name": "baseball-sim",
-  "version": "1.0.0",
-  "description": "BASEBALL SIM - Spectator baseball simulator",
+  "version": "1.0.5",
   "private": true,
   "scripts": {
-    "sync": "cap sync ios",
-    "open": "cap open ios"
+    "sync": "cap sync",
+    "sync:ios": "cap sync ios",
+    "sync:android": "cap sync android"
   },
   "dependencies": {
-    "@capacitor/cli": "^8.4.1",
-    "@capacitor/core": "^8.4.1",
-    "@capacitor/ios": "^8.4.1"
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
   }
 }
