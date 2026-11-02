@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- アプリ本体の配色に合わせたダークカラー -->
-    <color name="colorPrimary">#0F0F0F</color>
-    <color name="colorPrimaryDark">#0F0F0F</color>
-    <color name="colorAccent">#F5E642</color>
-    <color name="background">#0F0F0F</color>
-</resources>
