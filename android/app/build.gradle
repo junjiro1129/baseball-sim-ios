@@ -10,6 +10,13 @@ if (hasKeystore) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+// ===== バージョン =====
+// Codemagic から ANDROID_VERSION_CODE / ANDROID_VERSION_NAME で上書きする。
+// 代入文として先に確定させる（defaultConfig 内で直接書くと Groovy のコマンド式として
+// 誤解釈され、versionCode に文字列が渡ってしまうため）。
+def appVersionCode = (System.getenv("ANDROID_VERSION_CODE") ?: "1").toInteger()
+def appVersionName = (System.getenv("ANDROID_VERSION_NAME") ?: "1.0.5").toString()
+
 android {
     namespace = "com.nakahomes.baseballsim"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -17,9 +24,8 @@ android {
         applicationId "com.nakahomes.baseballsim"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // Codemagic から ANDROID_VERSION_CODE / ANDROID_VERSION_NAME で上書きする
-        versionCode (System.getenv("ANDROID_VERSION_CODE") ?: "1").toInteger()
-        versionName System.getenv("ANDROID_VERSION_NAME") ?: "1.0.5"
+        versionCode appVersionCode
+        versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
