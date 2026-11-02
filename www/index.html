@@ -1194,6 +1194,73 @@ function gotoScreen(id){
 function gotoSelect(){stopAuto();fromLeague=false;selIds=[];renderTGrid();document.getElementById('sel-status').textContent='';document.getElementById('start-btn').style.display='none';gotoScreen('select-screen');}
 function gotoEditor(){edTabIdx=0;edTeamIdx=0;renderEdSels();loadEdTeam(0);gotoScreen('editor-screen');}
 
+// ═══ ANDROID BACK BUTTON ═══
+// Androidの戻るボタン／戻るジェスチャーを、画面内の「戻る」ボタンと同じ動作に割り当てる。
+// 仕組み: 戻れる状態のときだけ history に番兵を1つだけ積んでおく。
+//         メニュー画面で何も開いていないときは番兵が無いので、OS既定の動作（アプリ終了）になる。
+// 番兵は常に最大1つ。cbkConsuming でガードし、基点より手前に戻らないようにしている。
+let cbkArmed=false,cbkConsuming=false;
+
+function cbkOverlay(){
+  const on=function(id){const e=document.getElementById(id);return !!e&&e.classList.contains('on');};
+  if(on('modal-overlay'))return 'confirm';
+  if(on('pos-picker-modal'))return 'pospicker';
+  if(on('sub-modal'))return 'sub';
+  const pc=document.getElementById('pcard-back');
+  if(pc&&pc.classList.contains('show'))return 'pcard';
+  return null;
+}
+function cbkScreen(){
+  const el=document.querySelector('.screen.active');
+  return el?el.id:'menu-screen';
+}
+function cbkArm(){
+  if(cbkArmed)return;
+  try{history.pushState({cbk:1},'');cbkArmed=true;}catch(e){}
+}
+function cbkSync(){
+  if(cbkConsuming)return;
+  const need=!!cbkOverlay()||cbkScreen()!=='menu-screen';
+  if(need){cbkArm();return;}
+  if(cbkArmed){
+    cbkArmed=false;cbkConsuming=true;
+    try{history.back();}catch(e){cbkConsuming=false;}
+  }
+}
+function cbkHandle(){
+  const ov=cbkOverlay();
+  if(ov==='confirm'){modalCancel();return;}
+  if(ov==='pospicker'){closePosPicker();return;}
+  if(ov==='sub'){closeSubModal();return;}
+  if(ov==='pcard'){hidePlayerCard();return;}
+  switch(cbkScreen()){
+    case 'order-screen':
+      backFromOrder();break;
+    case 'game-screen':
+      showConfirm(lang==='ja'?'試合を中断してもよろしいですか？':'Abandon this game?')
+        .then(function(ok){if(ok)backFromGame();});
+      break;
+    case 'menu-screen':
+      break;
+    default:
+      gotoScreen('menu-screen');
+  }
+}
+window.addEventListener('popstate',function(){
+  cbkArmed=false;
+  if(cbkConsuming){cbkConsuming=false;cbkSync();return;}
+  cbkHandle();
+  setTimeout(cbkSync,0);
+});
+// 既存関数には手を入れず、画面遷移・モーダル開閉のあとに番兵を同期させる
+['showConfirm','closeModal','openPosPicker','closePosPicker','openSubModal','closeSubModal',
+ 'showPlayerCard','hidePlayerCard','gotoScreen','backFromGame','backFromOrder',
+ 'gotoLeague','gotoSelect','gotoEditor'].forEach(function(n){
+  const f=window[n];
+  if(typeof f!=='function')return;
+  window[n]=function(){const r=f.apply(this,arguments);setTimeout(cbkSync,0);return r;};
+});
+
 // ═══ ORDER SCREEN ═══
 // orderData[0] = away, orderData[1] = home
 // Each: { teamRef, pitcherIdx, lineup:[playerObj x9 from roster], bench:[remaining], selSlot:null|0-8 }
