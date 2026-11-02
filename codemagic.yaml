@@ -74,3 +74,68 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+  # ==============================================================
+  # Android: 動作確認ビルド（署名なし・Play Console登録前でも実行可）
+  # ==============================================================
+  android-check:
+    name: BASEBALL SIM - Android Build Check
+    max_build_duration: 60
+    environment:
+      node: 22
+      java: 21
+    scripts:
+      - name: npm install
+        script: npm install
+      - name: Capacitor sync
+        script: npx cap sync android
+      - name: Build (debug / 署名なし)
+        script: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+
+  # ==============================================================
+  # Android: Playストア提出用（署名付き AAB）
+  # 事前に環境変数グループ "android_signing" に以下を登録すること:
+  #   CM_ANDROID_KEYSTORE           … upload.jks を Base64 にしたもの（Secure）
+  #   CM_ANDROID_KEYSTORE_PASSWORD  … キーストアのパスワード（Secure）
+  #   CM_ANDROID_KEY_ALIAS          … baseballsim
+  #   CM_ANDROID_KEY_PASSWORD       … 鍵のパスワード（Secure・ストアと同じ）
+  # ==============================================================
+  android-release:
+    name: BASEBALL SIM - Android Release (AAB)
+    max_build_duration: 90
+    environment:
+      groups:
+        - android_signing
+      vars:
+        ANDROID_VERSION_NAME: "1.0.5"   # ← アップデートのたびにここを上げる
+      node: 22
+      java: 21
+    scripts:
+      - name: npm install
+        script: npm install
+      - name: Capacitor sync
+        script: npx cap sync android
+      - name: Set up keystore (from env vars)
+        script: |
+          echo "$CM_ANDROID_KEYSTORE" | base64 --decode > "$CM_BUILD_DIR/android/upload.jks"
+          printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$CM_BUILD_DIR/android/upload.jks" \
+            "$CM_ANDROID_KEYSTORE_PASSWORD" \
+            "$CM_ANDROID_KEY_ALIAS" \
+            "$CM_ANDROID_KEY_PASSWORD" > "$CM_BUILD_DIR/android/keystore.properties"
+          echo "--- keystore.properties を生成（パスワードは表示しない） ---"
+          grep -v Password "$CM_BUILD_DIR/android/keystore.properties"
+      - name: Build AAB (signed)
+        script: |
+          cd android
+          chmod +x gradlew
+          export ANDROID_VERSION_CODE="$BUILD_NUMBER"
+          export ANDROID_VERSION_NAME="$ANDROID_VERSION_NAME"
+          ./gradlew bundleRelease --no-daemon
+    artifacts:
+      - android/app/build/outputs/bundle/**/*.aab
+      - android/app/build/outputs/**/mapping.txt
