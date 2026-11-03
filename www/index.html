@@ -5045,21 +5045,53 @@ function renderStandings(){
     // If M ≤ 0 (or the leader has no games left), the title is already clinched
     // and we show "優勝" / "CHAMP" instead of a number.
     const totalGames=league.gpp*(teamIds.length-1);
+    // 残り試合数と直接対決の残り数を、日程から実数で数える。
+    // （totalGames-消化数 では中止・再編成に追従できないため）
+    const remOf={},h2h={};
+    teamIds.forEach(x=>{remOf[x]=0;h2h[x]={};teamIds.forEach(y=>{h2h[x][y]=0;});});
+    (league.schedule||[]).forEach(g=>{
+      if(g.done)return;
+      if(g.phase&&g.phase!=='regular')return;   // ポストシーズンは除外
+      const hasH=(remOf[g.home]!==undefined),hasA=(remOf[g.away]!==undefined);
+      if(hasH)remOf[g.home]++;
+      if(hasA)remOf[g.away]++;
+      if(hasH&&hasA){h2h[g.home][g.away]++;h2h[g.away][g.home]++;}
+    });
+    // 自力優勝の可能性: 残り全勝すれば、他チームの結果に関わらず首位に立てるか。
+    // 自分が全勝する前提なので、直接対決の残り分は相手が必ず落とす。
+    const canWinOnOwn=(r)=>{
+      const myMax=r.w+remOf[r.id];
+      for(let j=0;j<rows.length;j++){
+        const o=rows[j];
+        if(o.id===r.id)continue;
+        const oMax=o.w+Math.max(0,remOf[o.id]-(h2h[r.id]?.[o.id]||0));
+        if(oMax>myMax)return false;
+      }
+      return true;
+    };
     const calcMagic=()=>{
       if(rows.length<2)return null;
-      const topRemaining=totalGames-top.g;
+      // 日程が失われたセーブ(旧版の緊急保存)では判定できない → 何も表示しない
+      const schedKnown=(league.schedule||[]).some(g=>remOf[g.home]!==undefined||remOf[g.away]!==undefined);
+      if(!schedKnown)return null;
+      let anyRem=0;teamIds.forEach(x=>{anyRem+=remOf[x];});
+      if(anyRem===0)return 'CHAMP';     // 全日程終了 → 首位が優勝
+      const topRemaining=remOf[top.id];
       let maxRivalWins=0;
       for(let i=1;i<rows.length;i++){
-        const r=rows[i];
-        const rMaxWins=r.w+Math.max(0,totalGames-r.g);
-        if(rMaxWins>maxRivalWins)maxRivalWins=rMaxWins;
+        const v=rows[i].w+remOf[rows[i].id];
+        if(v>maxRivalWins)maxRivalWins=v;
       }
-      // M = wins still needed for the leader to finish above the best rival,
-      //     assuming that rival wins out.
+      // M = 対抗の最大勝利可能数 - 首位の現在勝利数 + 1
       const M=maxRivalWins-top.w+1;
-      if(M<=0)return 'CHAMP';           // rivals already mathematically eliminated
-      if(topRemaining<=0)return 'CHAMP';
-      if(M>topRemaining)return null;    // not yet attainable - no magic shown
+      if(M<=0)return 'CHAMP';           // 他チームは数字の上で全滅 = 優勝確定
+      // 点灯条件(NPB): 1位以外の全チームが自力優勝の可能性を失っていること。
+      // ここを見ていなかったため、首位に立った時点でM=残り試合数が出ていた。
+      for(let i=1;i<rows.length;i++){
+        if(canWinOnOwn(rows[i]))return null;
+      }
+      if(topRemaining<=0)return null;   // 首位に残り試合が無く未確定なら表示しない
+      if(M>topRemaining)return null;    // 念のための保険（上の条件下では起きない）
       return M;
     };
     const topMagic=calcMagic();
