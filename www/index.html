@@ -1227,25 +1227,38 @@ function cbkSync(){
     try{history.back();}catch(e){cbkConsuming=false;}
   }
 }
+// 戻る操作を1回ぶん処理する。処理したら true、もう戻る先が無ければ false。
+// false のときは呼び出し側(Android)がアプリを終了させる。
 function cbkHandle(){
   const ov=cbkOverlay();
-  if(ov==='confirm'){modalCancel();return;}
-  if(ov==='pospicker'){closePosPicker();return;}
-  if(ov==='sub'){closeSubModal();return;}
-  if(ov==='pcard'){hidePlayerCard();return;}
+  if(ov==='confirm'){modalCancel();return true;}
+  if(ov==='pospicker'){closePosPicker();return true;}
+  if(ov==='sub'){closeSubModal();return true;}
+  if(ov==='pcard'){hidePlayerCard();return true;}
   switch(cbkScreen()){
     case 'order-screen':
-      backFromOrder();break;
+      backFromOrder();return true;
     case 'game-screen':
       showConfirm(lang==='ja'?'試合を中断してもよろしいですか？':'Abandon this game?')
         .then(function(ok){if(ok)backFromGame();});
-      break;
+      return true;   // 確認ダイアログを出した時点で「処理済み」
     case 'menu-screen':
-      break;
+      return false;  // メニューで戻る = アプリ終了
     default:
-      gotoScreen('menu-screen');
+      gotoScreen('menu-screen');return true;
   }
 }
+// Androidネイティブ(MainActivity)からの入口。
+// Capacitor 8 本体に戻るボタンの処理が無いため、MainActivity 側がこれを直接呼ぶ。
+// WebViewの履歴挙動に依存しないので、端末やWebViewのバージョン差の影響を受けない。
+window.__onAndroidBack=function(){
+  try{
+    const handled=cbkHandle();
+    setTimeout(cbkSync,0);
+    return !!handled;
+  }catch(e){return false;}
+};
+// Web／iOS 用: ブラウザの戻る操作にも同じ判定をつなぐ
 window.addEventListener('popstate',function(){
   cbkArmed=false;
   if(cbkConsuming){cbkConsuming=false;cbkSync();return;}
