@@ -3,6 +3,9 @@
   "appName": "BASEBALL SIM",
   "webDir": "www",
   "backgroundColor": "#0f0f0f",
+  "server": {
+    "androidScheme": "https"
+  },
   "ios": {
     "contentInset": "never",
     "backgroundColor": "#0f0f0f"
@@ -10,7 +13,6 @@
   "android": {
     "backgroundColor": "#0f0f0f",
     "allowMixedContent": false,
-    "captureInput": true,
-    "webContentsDebuggingEnabled": false
+    "captureInput": true
   }
 }
