@@ -1,6 +1,6 @@
 {
   "name": "baseball-sim",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "private": true,
   "scripts": {
     "sync": "cap sync",
@@ -10,7 +10,9 @@
   "dependencies": {
     "@capacitor/android": "^8.5.3",
     "@capacitor/core": "^8.5.3",
-    "@capacitor/ios": "^8.5.3"
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/ios": "^8.5.3",
+    "@capacitor/share": "^8.0.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.3"
