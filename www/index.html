@@ -58,7 +58,13 @@ label{font-size:.8rem;color:var(--text2);display:block;margin-bottom:4px;letter-
 .notice.warn{border-color:#7a5000;color:#f0b429}.notice.ok{border-color:#1a5c2a;color:#4caf50}.notice.info{border-color:#1a3a6c;color:#4a9edd}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:#444;border-radius:2px}
 /* LANG SWITCH */
-.lang-btn{position:fixed;top:.6rem;right:.75rem;z-index:100;font-family:'Courier New',monospace;font-size:.8rem;font-weight:700;padding:.35rem .7rem;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer;transition:all .1s}
+/* position:fixed はビューポート基準なので、body に付けた
+   padding-top:env(safe-area-inset-top) が効かない。そのままだと
+   ボタンがステータスバーの下に潜り込む。Android はステータスバーが
+   タップを奪うため押せなくなり、表示も半透明バー越しで崩れて見える。
+   セーフエリア分を自前で足して回避する（iOS では inset が 0 のため
+   calc の結果は従来と同じ = 表示は変わらない）。 */
+.lang-btn{position:fixed;top:calc(env(safe-area-inset-top, 0px) + .6rem);right:calc(env(safe-area-inset-right, 0px) + .75rem);z-index:100;font-family:'Courier New',monospace;font-size:.8rem;font-weight:700;padding:.35rem .7rem;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer;transition:all .1s}
 .lang-btn:hover{border-color:#888;color:var(--text)}
 /* MENU */
 #menu-screen{text-align:center;padding:1.75rem 0 1.25rem}
