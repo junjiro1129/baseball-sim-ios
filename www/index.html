@@ -5524,10 +5524,46 @@ function renderStats(type){
 }
 
 // ═══ SAVE / LOAD ═══
-function saveData(){
+async function saveData(){
   const data={version:4,lang,isPro,teams,league,leagueBat,leaguePit};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='baseball-sim-data.json';a.click();URL.revokeObjectURL(url);
+  const json=JSON.stringify(data,null,2);
+  const fname='baseball-sim-data.json';
+  const ja=(lang==='ja');
+
+  // アプリ版(Android/iOS)では WebView が <a download> を処理しないため、
+  // 従来の実装は保存ボタンを押しても無反応だった。
+  //   Android … Capacitor に DownloadListener が無く、クリックが捨てられる
+  //   iOS     … WKWebView が blob: のダウンロードを扱わない
+  // キャッシュに書き出してから共有シートに渡す。保存先はユーザーが選ぶので
+  // ストレージ権限は不要。
+  const plat=(window.Capacitor&&typeof Capacitor.getPlatform==='function')?Capacitor.getPlatform():'web';
+  if(plat==='android'||plat==='ios'){
+    const P=Capacitor.Plugins||{};
+    if(P.Filesystem&&P.Share){
+      try{
+        const res=await P.Filesystem.writeFile({
+          path:fname,data:json,directory:'CACHE',encoding:'utf8'
+        });
+        await P.Share.share({
+          title:'BASEBALL SIM '+(ja?'セーブデータ':'save data'),
+          files:[res.uri],
+          dialogTitle:ja?'保存先を選んでください':'Choose where to save'
+        });
+      }catch(e){
+        const m=String((e&&e.message)||e||'');
+        // 共有シートを閉じただけのときはエラー扱いしない
+        if(!/cancel|abort|dismiss/i.test(m)){
+          await showConfirm((ja?'データの書き出しに失敗しました\n':'Export failed\n')+m);
+        }
+      }
+      return;
+    }
+  }
+
+  // ブラウザ版(GitHub Pages のWeb体験版など): 従来どおりのダウンロード
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=fname;a.click();URL.revokeObjectURL(url);
 }
 
 // ═══ AUTO-SAVE / AUTO-LOAD (localStorage) ═══
